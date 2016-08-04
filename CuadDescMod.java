@@ -3,8 +3,6 @@
 //que pasa si el forcing es vacio?(k4)
 import java.io.*;
 import java.util.*;
-import java.math.BigInteger;
-import javax.swing.*;
 import java.util.concurrent.*;
 public class CuadDescMod{
 public static int V;//numero de nodos
