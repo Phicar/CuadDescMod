@@ -100,6 +100,7 @@ HashMap<Integer,HashSet<Integer>> SCC = Tarjan();
 System.out.println("-->"+SCC);
 nodo u = res.raiz;
 while(true){
+//aca deberia ir algo pero no porque es para ver si git funca
 nodo w = new nodo(-1);
 u.hijos.add(w);
 //getLeaf(GG)..estructura de padres
