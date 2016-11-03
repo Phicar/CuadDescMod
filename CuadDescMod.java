@@ -314,42 +314,43 @@ class part{//a partition of a set
 			L.remove(hS);
 			HashSet<Integer> izO = new HashSet<Integer>();
 			HashSet<Integer> derO = new HashSet<Integer>();
+			/*los nuevos bloques deben quedar apuntando a sus outsiders, se elimina el bloque hS de los outsiders*/
 			for(int outS:S.outsiders){
 				if(outS==w)continue;
 				izO.add(outS);
 				derO.add(outS);
-				if(!out.keySet().contains(outS))out.put(outS,new HashSet<Integer>());
+				if(!out.keySet().contains(outS))
+					out.put(outS,new HashSet<Integer>());
 				out.get(outS).add(ha);
 				out.get(outS).add(ha+1);
 				out.get(outS).remove(hS);
 				outStack.add(outS);
 			}
+			/*los outsiders se cruzan entre los nuevos dos bloques (esto es lineal porque es una 2 estructura(solo 1 tipo de ady).)*/
 			for(int outDer:der){
 				if(outDer==w)continue;
 				izO.add(outDer);
 				if(!out.keySet().contains(outDer))
-				out.put(outDer,new HashSet<Integer>());
+					out.put(outDer,new HashSet<Integer>());
 				if(!outStack.contains(outDer))outStack.add(outDer);
-				out.get(outDer).add(ha);
+					out.get(outDer).add(ha);
 			}
-			//izO.addAll(der);
-			//izO.remove(w);
+			/*se crea el bloque izq*/
 			L.put(ha,new bloque(ha,repreIzq,izq,izO));
 			ha++;
 			for(int outDer:izq){
 				if(outDer==w)continue;
 				derO.add(outDer);
 				if(!out.keySet().contains(outDer))
-				out.put(outDer,new HashSet<Integer>());
+					out.put(outDer,new HashSet<Integer>());
 				if(!outStack.contains(outDer))outStack.add(outDer);
-				out.get(outDer).add(ha);
+					out.get(outDer).add(ha);
 			}
-			//derO.addAll(izq);
-			//derO.remove(w);
+			/*se crea el bloque der*/
 			L.put(ha,new bloque(ha,repreDer,der,derO));
 			ha++;
 			out.get(w).remove(hS);
-		}else{
+		}else{ // si todos son indistinguibles solo se elimina el outsider
 			out.get(w).remove(hS);
 			L.get(hS).outsiders.remove(w);
 		}
@@ -360,8 +361,9 @@ class part{//a partition of a set
 		}
 		//System.out.println("Refi(w="+w+" "+hS+"): L="+L+" outsiders="+out+" outS="+outStack);
 		}
+		/*se crea el bloque que falta, el que solo contiene el pivot*/
 		L.put(ha,new bloque(ha,pivot,singleV,null));
-		L.get(ha).pivot=true;
+		L.get(ha).pivot=true;//se da un flag para saber que bloque es el del pivot
 	}
 	public String toString(){
 		return "L="+L+" out="+out;
@@ -371,7 +373,7 @@ class part{//a partition of a set
 clase bloque, compone clase part(particion)
 */
 class bloque{
-	public boolean pivot=false;
+	public boolean pivot=false;//es el bloque del pivot?
 	public int hash;//identificador del bloque en L(particion)
 	public int repre;//repre \in elementos.
 	public HashSet<Integer> outsiders;
