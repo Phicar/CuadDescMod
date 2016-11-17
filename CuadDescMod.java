@@ -48,7 +48,7 @@ public class CuadDescMod{
 				ady.put(b,new HashSet<Integer>());
 			/*Se relacionan los vertices en la estructura de lista y en el conjunto disjunto*/
 			ady.get(a).add(b);
-			//ady.get(b).add(a);DESCOMENTAR
+			ady.get(b).add(a);//DESCOMENTAR
 			union(a,b);//a y b estan en la misma componente conexa
 		}
 		/*Se construye el mapeo entre componente y nodo y viceversa*/
@@ -89,6 +89,10 @@ public class CuadDescMod{
 		/*Si el grafo es vacio, no hay nada que hacer*/
 		if(dom.size()==0)
 			return res;
+		if(dom.size()==1){
+			res.raiz.hijos.add(new nodo(dom.get(0)));
+			return res;
+		}
 		/*Se escoje de pivot el ultimo vertice en el dominio
 		por ver: Hay cambio dependiendo del vertice pivot que se escoja?
 		*/
@@ -114,15 +118,15 @@ public class CuadDescMod{
 				adyGPrima.get(an).add(am);
 			}
 		}
-		System.out.println(pivotCociente+" "+adyGPrima);
+		System.out.println("pivotCociente: "+pivotCociente+" grafo cociente: "+adyGPrima);
 		/*
 		Crea el forcing G(g',v') donde g' es el grafo cociente y v' es la imagen de v(el pivot) bajo el mapeo cociente.
 		(vFor,wFor)\in E_{G(g',v')} sii vFor distingue a wFor y el pivot. 
 		x distingue a y de z si (x,y) y (x,z) tienen colores diferentes.
 		porver
 		*/
-		adyForG = ady;//new HashMap<Integer,HashSet<Integer>>();DESCOMENTAR
-		/*for(int vFor:adyGPrima.keySet()){
+		adyForG = new HashMap<Integer,HashSet<Integer>>();//DESCOMENTAR
+		for(int vFor:adyGPrima.keySet()){
 			for(int wFor:adyGPrima.keySet()){
 				if(vFor==wFor || vFor==pivotCociente || wFor==pivotCociente)continue;
 				if(adyGPrima.get(vFor).contains(pivotCociente) ^
@@ -132,17 +136,20 @@ public class CuadDescMod{
 					adyForG.get(vFor).add(wFor);
 				}
 			}
-		}DESCOMENTAR*/
-		System.out.println("bypass tarjan "+adyForG);
+		}//DESCOMENTAR
+		System.out.println("Forcing: "+adyForG);
 		/*Se encuentra el grafo componente G''*/
-		HashMap<Integer,HashSet<Integer>> SCC = Tarjan();
-		System.out.println("-->"+SCC+" "+comp);
-		HashMap<Integer> vProcesado = new HashMap<Integer>();
+		Vector<HashMap<Integer,HashSet<Integer>>> SCC = Tarjan();//grafo componente,grafo invertido,componentes
+		System.out.println("Component Graph: "+SCC.get(0)+" "+comp+" "+SCC.get(1));
+		HashSet<Integer> vProcesado = new HashSet<Integer>();
+		HashSet<Integer> vPila = new HashSet<Integer>();
 		nodo u = res.raiz;
 		Stack<Integer> hojas = new Stack<Integer>();
-		for(int n:SCC.keySet())
-			if(SCC.get(n).isEmpty())
+		for(int n:SCC.get(0).keySet())
+			if(SCC.get(0).get(n).isEmpty()){
 				hojas.push(n);
+				vPila.add(n);
+			}
 		System.out.println("leaf "+hojas);
 		/*Mientras G'' no sea vacio*/
 		while(!hojas.isEmpty()){
@@ -150,17 +157,33 @@ public class CuadDescMod{
 			u.hijos.add(w);
 			//getLeaf(GG)..estructura de padres
 			/*En el algoritmo aca es donde quitamos un nodo sumidero del DAG G''*/
-			Vector<Vector<Integer>> F = new Vector<Vector<Integer>>();
+			int repreLeaf = hojas.pop();
+			vProcesado.add(repreLeaf);
+			vPila.remove(repreLeaf);
+			HashSet<Integer> grafoComp = SCC.get(2).get(repreLeaf);
+			System.out.println("**"+grafoComp);
+			for(int pad: SCC.get(1).get(repreLeaf)){
+				if(vProcesado.contains(pad) || vPila.contains(pad))continue;
+				SCC.get(0).get(pad).remove(repreLeaf);
+				if(SCC.get(0).get(pad).isEmpty()){
+					hojas.push(pad);
+					vPila.add(pad);
+				}
+			}
+			System.out.println(hojas);
 			//un treeset como cola de prioridad y le quito outdegree
 			//necesitaria el grafo con las flechas pal otro lado
 			//F=//quien es Leaf en Componente de Mgv
 			/*se le asocia el tipo de nodo 1primitivo,2 completo*/
-			u.clase = F.size()>1?1:2;
+			u.clase = grafoComp.size()>1?1:2;
 			/*G'' quedo vacio*/
-			if(F.size()==0)break;
-			for(int n = 0;n<F.size();n++){
+			for(int n:grafoComp){
+				Vector<Integer> F = new Vector<Integer>();
+				for(int m:Mgv.L.get(Mgv.repreBlo.get(n)).elementos)
+					F.add(m);
+				System.out.println("Manda recursivamente "+F);
 				/*recursion*/
-				arbol gx = DescMod(F.get(n));
+				arbol gx = DescMod(F);
 				if(u.clase==2 && gx.raiz.clase==2){
 					/*si la raiz del recursivo y u son completos se pegan los hijos, asi que se recorren*/
 					for(int m= 0;m<gx.raiz.hijos.size();m++)
@@ -180,18 +203,19 @@ public class CuadDescMod{
 	public static Stack<Integer> sccS;
 	public static HashMap<Integer,Integer> vRepre;//v mapea a su representante
 	public static Vector<Integer> comp;//los vertices del component graph
-	public static HashMap<Integer,Vector<Integer>> compp;//Particion tarjan: representante-->conjunto
+	public static HashMap<Integer,HashSet<Integer>> compp;//Particion tarjan: representante-->conjunto
 	/*Devuelve el digrafo de las componentes fuertemente conexas (component graph en el paper)*/
-	public static HashMap<Integer,HashSet<Integer>> Tarjan(){
+	public static Vector<HashMap<Integer,HashSet<Integer>>> Tarjan(){
 		comp = new Vector<Integer>();
 		lowlink = new HashMap<Integer,Integer>();
 		index = new HashMap<Integer,Integer>();
 		vis = new HashSet<Integer>();
 		visScc = new HashSet<Integer>();
 		sccS = new Stack<Integer>();
-		compp = new HashMap<Integer,Vector<Integer>>();
+		compp = new HashMap<Integer,HashSet<Integer>>();
 		vRepre = new HashMap<Integer,Integer>();
 		HashMap<Integer,HashSet<Integer>> res = new HashMap<Integer,HashSet<Integer>>();
+		HashMap<Integer,HashSet<Integer>> resRev = new HashMap<Integer,HashSet<Integer>>();
 		desc=0;
 		/*recorre los vertices de G y manda tarjan*/
 		for(int a:adyForG.keySet())
@@ -199,18 +223,25 @@ public class CuadDescMod{
 				scc(a);
 		/*Recorre las componentes del Tarjan y crea el digrafo que definen sus componentes*/
 		System.out.println("TARJAN "+compp);
-		for(int n=0;n<comp.size();n++)
+		for(int n=0;n<comp.size();n++){
 			res.put(comp.get(n),new HashSet<Integer>());
+			resRev.put(comp.get(n),new HashSet<Integer>());
+		}
 		//Le aporta O(E) a Tarjan
 		for(int n: adyForG.keySet())
 			for(int m: adyForG.get(n)){
 				int rn = vRepre.get(n);
 				int rm = vRepre.get(m);				
 				if(rn==rm)continue;
-				res.get(comp.get(rn)).add(comp.get(rm));			
+				res.get(comp.get(rn)).add(comp.get(rm));
+				resRev.get(comp.get(rm)).add(comp.get(rn));
 			}
 		//System.out.println(lowlink+" "+index+" "+vis);
-		return res;
+		Vector<HashMap<Integer,HashSet<Integer>>> ress =new Vector<HashMap<Integer,HashSet<Integer>>>() ;
+		ress.add(res);
+		ress.add(resRev);
+		ress.add(compp);
+		return ress;
 	}
 	/*
 	Algoritmo Tarjan para encontrar componentes fuertemente conexas en un grafo dirigido
@@ -222,16 +253,18 @@ public class CuadDescMod{
 		index.put(a,desc++);
 		sccS.push(a);
 		vis.add(a);
+		if(adyForG.keySet().contains(a)){
 		for(int h:adyForG.get(a)){
 			if(!lowlink.keySet().contains(h))
 				scc(h);
 			if(vis.contains(h))
 				lowlink.put(a,Math.min(lowlink.get(a),lowlink.get(h)));
 		}
+		}
 		if(lowlink.get(a)==index.get(a)){
 			int puntero = -1;
 			//System.out.println(a+" "+sccS+" "+lowlink);
-			Vector<Integer> compa = new Vector<Integer>();
+			HashSet<Integer> compa = new HashSet<Integer>();
 			while(!sccS.isEmpty()){
 				puntero = sccS.pop();
 				visScc.add(puntero);
@@ -269,6 +302,7 @@ class part{//a partition of a set
 	public HashMap<Integer,bloque> L = new HashMap<Integer,bloque>();//mapea ha a su correspondiente bloque
 	public HashMap<Integer,HashSet<Integer>> out = new HashMap<Integer,HashSet<Integer>>();//mapeo entre outsiders y bloques
 	public TreeSet<Integer> outStack = new TreeSet<Integer>();//Los outsiders
+	public HashMap<Integer,Integer> repreBlo = new HashMap<Integer,Integer>();
 	//public HashMap<Integer,Veoctor<Integer>> ady;
 	/*Constructor de la particion*/
 	public part(Vector<Integer> dom,HashSet<Integer> dominio,int pivot){
@@ -278,7 +312,8 @@ class part{//a partition of a set
 		Crea el bloque principal a refinar, estan todos los vertices y se deja como representante del bloque al primer elemento
 		El unico outsider es el pivot
 		*/
-		ini = new bloque(ha++,dom.get(0),dominio,singleV);
+		ini = new bloque(ha,dom.get(0),dominio,singleV);
+		repreBlo.put(dom.get(0),ha++);
 		L.put(ini.hash,ini);
 		out.put(pivot,new HashSet<Integer>());
 		out.get(pivot).add(0);
@@ -350,6 +385,7 @@ class part{//a partition of a set
 			}
 			/*se crea el bloque izq*/
 			L.put(ha,new bloque(ha,repreIzq,izq,izO));
+			repreBlo.put(repreIzq,ha);
 			ha++;
 			for(int outDer:izq){
 				if(outDer==w)continue;
@@ -361,6 +397,7 @@ class part{//a partition of a set
 			}
 			/*se crea el bloque der*/
 			L.put(ha,new bloque(ha,repreDer,der,derO));
+			repreBlo.put(repreDer,ha);
 			ha++;
 			out.get(w).remove(hS);
 		}else{ // si todos son indistinguibles solo se elimina el outsider
@@ -376,10 +413,11 @@ class part{//a partition of a set
 		}
 		/*se crea el bloque que falta, el que solo contiene el pivot*/
 		L.put(ha,new bloque(ha,pivot,singleV,null));
+		repreBlo.put(pivot,ha);
 		L.get(ha).pivot=true;//se da un flag para saber que bloque es el del pivot
 	}
 	public String toString(){
-		return "L="+L+" out="+out;
+		return "Repre="+repreBlo+"L="+L+" out="+out;
 	}
 }
 /*
@@ -415,7 +453,10 @@ class nodo{
 		hijos = new Vector<nodo>();
 	}
 	public String toString(){
-		return clase+" "+hijos;
+		String ja = "";
+		for(int n =0;n<hijos.size();n++)
+			ja+= hijos.get(n)+" ";
+		return clase+" ("+ja+")";
 	}
 }
 /*
