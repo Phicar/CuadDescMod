@@ -6,6 +6,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 public class CuadDescMod{
+	//Tabs de la impresion
 	public static int V;//numero de nodos
 	public static int E;//numero de aristas
 	public static HashMap<Integer,HashSet<Integer>> ady;//HashMap es diccionario,Vector es lista enlazada.
@@ -66,12 +67,12 @@ public class CuadDescMod{
 		if(indComp.size()>1){
 			res = new arbol(0);
 				for(int n = 0;n<indComp.size();n++){
-					res.raiz.hijos.add(DescMod(componentes.get(indComp.get(n))).raiz);
+					res.raiz.hijos.add(DescMod(componentes.get(indComp.get(n)),"").raiz);
 				}
 		}else //solo una componente en G
-			res = DescMod(componentes.get(indComp.get(0)));
+			res = DescMod(componentes.get(indComp.get(0)),"");
 		/*Se imprime el arbol*/
-		System.out.println(res);
+		System.out.println("Arbol final:"+res);
 	}
 	/*La funcion ptf(G) en el paper. 
 	Recibe el conjunto dominio que es, basicamente, los vertices de un grafo conexo.
@@ -79,7 +80,7 @@ public class CuadDescMod{
 	No esta terminada:
 		falta saltar en el arbol.
 	*/
-	public static arbol DescMod(Vector<Integer> dom){
+	public static arbol DescMod(Vector<Integer> dom,String nivel){
 		/*se crea el arbol, con nodo en -1*/
 		arbol res = new arbol(-1);
 		/*Se crea un conjunto del dominio, busqueda en O(1)*/
@@ -118,7 +119,7 @@ public class CuadDescMod{
 				adyGPrima.get(an).add(am);
 			}
 		}
-		System.out.println("pivotCociente: "+pivotCociente+" grafo cociente: "+adyGPrima);
+		System.out.println(nivel+"pivotCociente: "+pivotCociente+" grafo cociente: "+adyGPrima);
 		/*
 		Crea el forcing G(g',v') donde g' es el grafo cociente y v' es la imagen de v(el pivot) bajo el mapeo cociente.
 		(vFor,wFor)\in E_{G(g',v')} sii vFor distingue a wFor y el pivot. 
@@ -137,10 +138,10 @@ public class CuadDescMod{
 				}
 			}
 		}//DESCOMENTAR
-		System.out.println("Forcing: "+adyForG);
+		System.out.println(nivel+"Forcing: "+adyForG);
 		/*Se encuentra el grafo componente G''*/
 		Vector<HashMap<Integer,HashSet<Integer>>> SCC = Tarjan();//grafo componente,grafo invertido,componentes
-		System.out.println("Component Graph: "+SCC.get(0)+" "+comp+" "+SCC.get(1));
+		System.out.println(nivel+"Component Graph: "+SCC.get(0)+" "+comp+" "+SCC.get(1));
 		HashSet<Integer> vProcesado = new HashSet<Integer>();
 		HashSet<Integer> vPila = new HashSet<Integer>();
 		nodo u = res.raiz;
@@ -150,7 +151,7 @@ public class CuadDescMod{
 				hojas.push(n);
 				vPila.add(n);
 			}
-		System.out.println("leaf "+hojas);
+		System.out.println(nivel+"leaf "+hojas);
 		/*Mientras G'' no sea vacio*/
 		while(!hojas.isEmpty()){
 			nodo w = new nodo(-1);
@@ -161,7 +162,7 @@ public class CuadDescMod{
 			vProcesado.add(repreLeaf);
 			vPila.remove(repreLeaf);
 			HashSet<Integer> grafoComp = SCC.get(2).get(repreLeaf);
-			System.out.println("**"+grafoComp);
+			System.out.println(nivel+"DentroWhile "+repreLeaf+" "+grafoComp);
 			for(int pad: SCC.get(1).get(repreLeaf)){
 				if(vProcesado.contains(pad) || vPila.contains(pad))continue;
 				SCC.get(0).get(pad).remove(repreLeaf);
@@ -170,7 +171,7 @@ public class CuadDescMod{
 					vPila.add(pad);
 				}
 			}
-			System.out.println(hojas);
+			//System.out.println(hojas);
 			//un treeset como cola de prioridad y le quito outdegree
 			//necesitaria el grafo con las flechas pal otro lado
 			//F=//quien es Leaf en Componente de Mgv
@@ -181,9 +182,9 @@ public class CuadDescMod{
 				Vector<Integer> F = new Vector<Integer>();
 				for(int m:Mgv.L.get(Mgv.repreBlo.get(n)).elementos)
 					F.add(m);
-				System.out.println("Manda recursivamente "+F);
+				System.out.println(nivel+"Manda recursivamente "+F);
 				/*recursion*/
-				arbol gx = DescMod(F);
+				arbol gx = DescMod(F,nivel+"\t");
 				if(u.clase==2 && gx.raiz.clase==2){
 					/*si la raiz del recursivo y u son completos se pegan los hijos, asi que se recorren*/
 					for(int m= 0;m<gx.raiz.hijos.size();m++)
