@@ -65,7 +65,7 @@ public class CuadDescMod{
 		arbol res;
 		//si hay mas de una componente se recorre componente a componente
 		if(indComp.size()>1){
-			res = new arbol(0);
+			res = new arbol(0,null);
 				for(int n = 0;n<indComp.size();n++){
 					res.raiz.hijos.add(DescMod(componentes.get(indComp.get(n)),"").raiz);
 				}
@@ -82,16 +82,17 @@ public class CuadDescMod{
 	*/
 	public static arbol DescMod(Vector<Integer> dom,String nivel){
 		/*se crea el arbol, con nodo en -1*/
-		arbol res = new arbol(-1);
+		
 		/*Se crea un conjunto del dominio, busqueda en O(1)*/
 		HashSet<Integer> dominio = new HashSet<Integer>();
 		for(int n = 0;n<dom.size();n++)
 			dominio.add(dom.get(n));
+		arbol res = new arbol(-1,dominio);
 		/*Si el grafo es vacio, no hay nada que hacer*/
 		if(dom.size()==0)
 			return res;
 		if(dom.size()==1){
-			res.raiz.hijos.add(new nodo(dom.get(0)));
+			res.raiz.hijos.add(new nodo(dom.get(0),dominio));
 			return res;
 		}
 		/*Se escoje de pivot el ultimo vertice en el dominio
@@ -102,7 +103,7 @@ public class CuadDescMod{
 		dom.remove(dom.size()-1);
 		/*llama M(g,v) el algoritmo 3.1 en el paper para crear los clanes respectivos al pivot*/
 		part Mgv = new part(dom,dominio,pivot);
-		System.out.println("Creando Mgv="+Mgv);
+		System.out.println(nivel+"Creando Mgv="+Mgv);
 		/*se creara g' el grafo cociente del grafo original g y la particion creada en Mgv*/
 		HashMap<Integer,HashSet<Integer>> adyGPrima = new HashMap<Integer,HashSet<Integer>>();
 		int pivotCociente = -1;
@@ -154,14 +155,15 @@ public class CuadDescMod{
 		System.out.println(nivel+"leaf "+hojas);
 		/*Mientras G'' no sea vacio*/
 		while(!hojas.isEmpty()){
-			nodo w = new nodo(-1);
-			u.hijos.add(w);
-			//getLeaf(GG)..estructura de padres
-			/*En el algoritmo aca es donde quitamos un nodo sumidero del DAG G''*/
 			int repreLeaf = hojas.pop();
 			vProcesado.add(repreLeaf);
 			vPila.remove(repreLeaf);
 			HashSet<Integer> grafoComp = SCC.get(2).get(repreLeaf);
+			nodo w = new nodo(-1,grafoComp);
+			u.hijos.add(w);
+			//getLeaf(GG)..estructura de padres
+			/*En el algoritmo aca es donde quitamos un nodo sumidero del DAG G''*/
+			
 			System.out.println(nivel+"DentroWhile "+repreLeaf+" "+grafoComp);
 			for(int pad: SCC.get(1).get(repreLeaf)){
 				if(vProcesado.contains(pad) || vPila.contains(pad))continue;
@@ -175,7 +177,7 @@ public class CuadDescMod{
 			//un treeset como cola de prioridad y le quito outdegree
 			//necesitaria el grafo con las flechas pal otro lado
 			//F=//quien es Leaf en Componente de Mgv
-			/*se le asocia el tipo de nodo 1primitivo,2 completo*/
+			/*se le asocia el tipo de nodo 1 primitivo,2 completo*/
 			u.clase = grafoComp.size()>1?1:2;
 			/*G'' quedo vacio*/
 			for(int n:grafoComp){
@@ -448,16 +450,18 @@ contiene el tipo de nodo(primo degenerado)
 */
 class nodo{
 	public Vector<nodo> hijos;
+	public HashSet<Integer> et;
 	public int clase;
-	public nodo(int clase){
+	public nodo(int clase,HashSet<Integer> et){
 		this.clase = clase;
 		hijos = new Vector<nodo>();
+		this.et = et;
 	}
 	public String toString(){
 		String ja = "";
 		for(int n =0;n<hijos.size();n++)
 			ja+= hijos.get(n)+" ";
-		return clase+" ("+ja+")";
+		return (clase==1?"Primitivo":"Completo")+" "+et+" ("+ja+")";
 	}
 }
 /*
@@ -465,8 +469,8 @@ clase arbol, tiene un nodo raiz y de recorre recursivamente
 */
 class arbol{
 	public nodo raiz;
-	public arbol(int a){
-		raiz = new nodo(a);
+	public arbol(int a,HashSet<Integer> b){
+		raiz = new nodo(a,b);
 	}
 	public String toString(){
 		return ""+raiz;
