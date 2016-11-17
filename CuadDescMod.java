@@ -48,7 +48,7 @@ public class CuadDescMod{
 				ady.put(b,new HashSet<Integer>());
 			/*Se relacionan los vertices en la estructura de lista y en el conjunto disjunto*/
 			ady.get(a).add(b);
-			ady.get(b).add(a);
+			//ady.get(b).add(a);DESCOMENTAR
 			union(a,b);//a y b estan en la misma componente conexa
 		}
 		/*Se construye el mapeo entre componente y nodo y viceversa*/
@@ -121,8 +121,8 @@ public class CuadDescMod{
 		x distingue a y de z si (x,y) y (x,z) tienen colores diferentes.
 		porver
 		*/
-		adyForG = new HashMap<Integer,HashSet<Integer>>();
-		for(int vFor:adyGPrima.keySet()){
+		adyForG = ady;//new HashMap<Integer,HashSet<Integer>>();DESCOMENTAR
+		/*for(int vFor:adyGPrima.keySet()){
 			for(int wFor:adyGPrima.keySet()){
 				if(vFor==wFor || vFor==pivotCociente || wFor==pivotCociente)continue;
 				if(adyGPrima.get(vFor).contains(pivotCociente) ^
@@ -132,14 +132,20 @@ public class CuadDescMod{
 					adyForG.get(vFor).add(wFor);
 				}
 			}
-		}
-		System.out.println(adyForG);
+		}DESCOMENTAR*/
+		System.out.println("bypass tarjan "+adyForG);
 		/*Se encuentra el grafo componente G''*/
 		HashMap<Integer,HashSet<Integer>> SCC = Tarjan();
-		System.out.println("-->"+SCC);
+		System.out.println("-->"+SCC+" "+comp);
+		HashMap<Integer> vProcesado = new HashMap<Integer>();
 		nodo u = res.raiz;
+		Stack<Integer> hojas = new Stack<Integer>();
+		for(int n:SCC.keySet())
+			if(SCC.get(n).isEmpty())
+				hojas.push(n);
+		System.out.println("leaf "+hojas);
 		/*Mientras G'' no sea vacio*/
-		while(true){
+		while(!hojas.isEmpty()){
 			nodo w = new nodo(-1);
 			u.hijos.add(w);
 			//getLeaf(GG)..estructura de padres
@@ -172,8 +178,9 @@ public class CuadDescMod{
 	public static HashSet<Integer> vis;
 	public static HashSet<Integer> visScc;
 	public static Stack<Integer> sccS;
+	public static HashMap<Integer,Integer> vRepre;//v mapea a su representante
 	public static Vector<Integer> comp;//los vertices del component graph
-	public static HashMap<Integer,Vector<Integer>> compp;//porver no tengo idea
+	public static HashMap<Integer,Vector<Integer>> compp;//Particion tarjan: representante-->conjunto
 	/*Devuelve el digrafo de las componentes fuertemente conexas (component graph en el paper)*/
 	public static HashMap<Integer,HashSet<Integer>> Tarjan(){
 		comp = new Vector<Integer>();
@@ -182,7 +189,8 @@ public class CuadDescMod{
 		vis = new HashSet<Integer>();
 		visScc = new HashSet<Integer>();
 		sccS = new Stack<Integer>();
-		compp = new HashMap<Integer,Vector<Integer>>();	
+		compp = new HashMap<Integer,Vector<Integer>>();
+		vRepre = new HashMap<Integer,Integer>();
 		HashMap<Integer,HashSet<Integer>> res = new HashMap<Integer,HashSet<Integer>>();
 		desc=0;
 		/*recorre los vertices de G y manda tarjan*/
@@ -190,14 +198,17 @@ public class CuadDescMod{
 			if(!vis.contains(a))
 				scc(a);
 		/*Recorre las componentes del Tarjan y crea el digrafo que definen sus componentes*/
+		System.out.println("TARJAN "+compp);
 		for(int n=0;n<comp.size();n++)
 			res.put(comp.get(n),new HashSet<Integer>());
-		for(int n = 0;n<comp.size();n++)
-			for(int m = 0;m<comp.size();m++)
-				if(n!=m){
-					if(adyForG.get(comp.get(n)).contains(comp.get(m)))//porver no entiendo porque basta para comp.get(n)
-						res.get(comp.get(n)).add(comp.get(m));
-				}
+		//Le aporta O(E) a Tarjan
+		for(int n: adyForG.keySet())
+			for(int m: adyForG.get(n)){
+				int rn = vRepre.get(n);
+				int rm = vRepre.get(m);				
+				if(rn==rm)continue;
+				res.get(comp.get(rn)).add(comp.get(rm));			
+			}
 		//System.out.println(lowlink+" "+index+" "+vis);
 		return res;
 	}
@@ -225,11 +236,13 @@ public class CuadDescMod{
 				puntero = sccS.pop();
 				visScc.add(puntero);
 				compa.add(puntero);
+				vRepre.put(puntero,comp.size());
 				vis.remove(puntero);
 				if(puntero==a)break;
 			}
 			comp.add(a);
 			compp.put(a,compa);
+			
 		}
 
 	}
