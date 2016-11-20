@@ -92,8 +92,7 @@ public class CuadDescMod{
 		if(dom.size()==0)
 			return res;
 		if(dom.size()==1){
-			res.raiz.hijos.add(new nodo(dom.get(0),dominio));
-			return res;
+			return new arbol(2,dominio);
 		}
 		/*Se escoje de pivot el ultimo vertice en el dominio
 		por ver: Hay cambio dependiendo del vertice pivot que se escoja?
@@ -129,14 +128,13 @@ public class CuadDescMod{
 		*/
 		adyForG = new HashMap<Integer,HashSet<Integer>>();//DESCOMENTAR
 		for(int vFor:adyGPrima.keySet()){
+			if(!adyForG.keySet().contains(vFor))
+				adyForG.put(vFor,new HashSet<Integer>());
 			for(int wFor:adyGPrima.keySet()){
 				if(vFor==wFor || vFor==pivotCociente || wFor==pivotCociente)continue;
 				if(adyGPrima.get(vFor).contains(pivotCociente) ^
-				adyGPrima.get(vFor).contains(wFor)){
-					if(!adyForG.keySet().contains(vFor))
-						adyForG.put(vFor,new HashSet<Integer>());
+				adyGPrima.get(vFor).contains(wFor))
 					adyForG.get(vFor).add(wFor);
-				}
 			}
 		}//DESCOMENTAR
 		System.out.println(nivel+"Forcing: "+adyForG);
@@ -184,15 +182,18 @@ public class CuadDescMod{
 				Vector<Integer> F = new Vector<Integer>();
 				for(int m:Mgv.L.get(Mgv.repreBlo.get(n)).elementos)
 					F.add(m);
-				System.out.println(nivel+"Manda recursivamente "+F);
-				/*recursion*/
-				arbol gx = DescMod(F,nivel+"\t");
-				if(u.clase==2 && gx.raiz.clase==2){
-					/*si la raiz del recursivo y u son completos se pegan los hijos, asi que se recorren*/
-					for(int m= 0;m<gx.raiz.hijos.size();m++)
-						u.hijos.add(gx.raiz.hijos.get(n));
-				}else // solo se pega la raiz a u.
-					u.hijos.add(gx.raiz);
+					if(F.size()>0){
+						System.out.println(nivel+"Manda recursivamente "+F);
+						/*recursion*/
+						arbol gx = DescMod(F,nivel+"\t");
+						System.out.println(nivel+"Devuelve "+gx+"---"+u);	
+						if(u.clase==2 && gx.raiz.clase==2){
+							/*si la raiz del recursivo y u son completos se pegan los hijos, asi que se recorren*/
+							for(int m= 0;m<gx.raiz.hijos.size();m++)
+								u.hijos.add(gx.raiz.hijos.get(m));
+						}else // solo se pega la raiz a u.
+							u.hijos.add(gx.raiz);
+					}
 			}
 			u = w;
 		}
@@ -461,7 +462,7 @@ class nodo{
 		String ja = "";
 		for(int n =0;n<hijos.size();n++)
 			ja+= hijos.get(n)+" ";
-		return (clase==1?"Primitivo":"Completo")+" "+et+" ("+ja+")";
+		return (clase==1?"Primitivo":clase==0?"Vacio":"Completo")+" "+et+" ("+ja+")";
 	}
 }
 /*
