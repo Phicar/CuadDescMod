@@ -78,9 +78,28 @@ public class CuadDescMod{
 		}else{ //solo una componente en G
 			DescMod(componentes.get(indComp.get(0)),"");
 		}
+		/*Ajustar colores*/
+		colorear(0);
 		/*Se imprime el arbol*/
 		if(impresionArbol)
 		System.out.println("Arbol final:"+ptf.get(0));
+	}
+	public static void colorear(int a){
+		HashSet<Integer> h = ptf.get(a).hijos;
+		if(h.isEmpty())return;
+		int r = -1;
+		boolean completo = true;
+		for(int n:h){
+			HashSet<Integer> repres = ptf.get(n).et;
+			if(r==-1)r = (int)repres.iterator().next();
+			else{
+			if(!ady.get(r).contains((int)repres.iterator().next()))completo = false;
+			}
+			colorear(n);
+			
+		}
+		if(ptf.get(a).clase==2 && !completo)ptf.get(a).clase = 0;
+	
 	}
 	/*La funcion ptf(G) en el paper. 
 	Recibe el conjunto dominio que es, basicamente, los vertices de un grafo conexo.
@@ -228,8 +247,13 @@ public class CuadDescMod{
 					int abajo = DescMod(F,nivel+"\t");//arbol gx = DescMod(F,nivel+"\t");
 					ptf.get(abajo).et = toditos;
 					if(impresionArbol)
-						System.out.println(nivel+"Devuelve "+ptf.get(abajo));	
-					if(ptf.get(actual).clase==2 && ptf.get(abajo).clase==2){
+						System.out.println(nivel+"Devuelve "+ptf.get(abajo));
+					/*Establecer si es vacio o completo (color)*/
+					/*if(ptf.get(actual).clase==2){
+						if(F.size()==1 || !ady.get(F.get(0)).contains(F.get(1)))
+							ptf.get(actual).clase = 0;
+					}*/
+					if(ptf.get(actual).clase%2==15 && ptf.get(actual).clase==ptf.get(abajo).clase){//ojo 15
 						/*si la raiz del recursivo y u son completos se pegan los hijos, asi que se recorren*/
 						for(int m:ptf.get(abajo).hijos)
 							ptf.get(actual).hijos.add(m);
