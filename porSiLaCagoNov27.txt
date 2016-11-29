@@ -7,8 +7,6 @@ import java.util.*;
 import java.util.concurrent.*;
 public class CuadDescMod{
 	//Tabs de la impresion
-	public static boolean impresionTodo = false;
-	public static boolean impresionArbol = true;
 	public static int V;//numero de nodos
 	public static int E;//numero de aristas
 	public static HashMap<Integer,HashSet<Integer>> ady;//HashMap es diccionario,Vector es lista enlazada.
@@ -17,8 +15,6 @@ public class CuadDescMod{
 	public static HashMap<Integer,Vector<Integer>> componentes;//mapea componente i a {n\in V: compPert[n]=i}
 	public static Vector<Integer> indComp;//determina el representante(padre en el arbol) de la componente
 	public static HashMap<Integer,HashSet<Integer>> adyForG;//forcing graph 
-	public static HashMap<Integer,nodo> ptf = new HashMap<Integer,nodo>();//arbol final
-	public static int hashAct = 0;
 	public static void main(String args[]) throws Exception{
 		BufferedReader lector = new BufferedReader(new InputStreamReader(System.in));
 		String t[] = lector.readLine().split(" ");
@@ -64,23 +60,19 @@ public class CuadDescMod{
 			componentes.get(compPert[n]).add(n);
 			if(compPert[n]==n)indComp.add(n);//si n==find(n), n es representante de componente
 		}
-		if(impresionTodo)
 		System.out.println(componentes);
 		/*Donde deberia quedar el arbol de factorizacion*/
+		arbol res;
 		//si hay mas de una componente se recorre componente a componente
 		if(indComp.size()>1){
-			ptf.put(0,new nodo(0,null));
-			hashAct++;
+			res = new arbol(0,null);
 				for(int n = 0;n<indComp.size();n++){
-					int hasho = DescMod(componentes.get(indComp.get(n)),"");
-					ptf.get(0).hijos.add(hasho);
+					res.raiz.hijos.add(DescMod(componentes.get(indComp.get(n)),"").raiz);
 				}
-		}else{ //solo una componente en G
-			DescMod(componentes.get(indComp.get(0)),"");
-		}
+		}else //solo una componente en G
+			res = DescMod(componentes.get(indComp.get(0)),"");
 		/*Se imprime el arbol*/
-		if(impresionArbol)
-		System.out.println("Arbol final:"+ptf.get(0));
+		System.out.println("Arbol final:"+res);
 	}
 	/*La funcion ptf(G) en el paper. 
 	Recibe el conjunto dominio que es, basicamente, los vertices de un grafo conexo.
@@ -88,7 +80,7 @@ public class CuadDescMod{
 	No esta terminada:
 		falta saltar en el arbol.
 	*/
-	public static int DescMod(Vector<Integer> dom,String nivel){
+	public static arbol DescMod(Vector<Integer> dom,String nivel){
 		/*se crea el arbol, con nodo en -1*/
 		
 		/*Se crea un conjunto del dominio, busqueda en O(1)*/
@@ -98,11 +90,9 @@ public class CuadDescMod{
 		arbol res = new arbol(-1,dominio);
 		/*Si el grafo es vacio, no hay nada que hacer*/
 		if(dom.size()==0)
-			return -1;
+			return null;
 		if(dom.size()==1){
-			int mira = hashAct;
-			ptf.put(hashAct++,new nodo(3,dominio));
-			return mira;
+			return new arbol(2,dominio);
 		}
 		/*Se escoje de pivot el ultimo vertice en el dominio
 		por ver: Hay cambio dependiendo del vertice pivot que se escoja?
@@ -112,11 +102,7 @@ public class CuadDescMod{
 		dom.remove(dom.size()-1);
 		/*llama M(g,v) el algoritmo 3.1 en el paper para crear los clanes respectivos al pivot*/
 		part Mgv = new part(dom,dominio,pivot);
-		if(impresionTodo){
 		System.out.println(nivel+"Creando Mgv="+Mgv);
-		System.out.println(nivel+"Creando Mgv pivot = "+pivot+" dominio="+dominio+" "+dom);
-		System.out.println(ady);
-		}
 		/*se creara g' el grafo cociente del grafo original g y la particion creada en Mgv*/
 		HashMap<Integer,HashSet<Integer>> adyGPrima = new HashMap<Integer,HashSet<Integer>>();
 		int pivotCociente = -1;
@@ -127,13 +113,12 @@ public class CuadDescMod{
 				int am = Mgv.L.get(q).repre;
 				if(Mgv.L.get(p).pivot)pivotCociente=an;
 				if(an==am)continue;
+				if(!ady.get(an).contains(am))continue;
 				if(!adyGPrima.keySet().contains(an))
 				adyGPrima.put(an,new HashSet<Integer>());
-				if(!ady.get(an).contains(am))continue;
 				adyGPrima.get(an).add(am);
 			}
 		}
-		if(impresionTodo)
 		System.out.println(nivel+"pivotCociente: "+pivotCociente+" grafo cociente: "+adyGPrima);
 		/*
 		Crea el forcing G(g',v') donde g' es el grafo cociente y v' es la imagen de v(el pivot) bajo el mapeo cociente.
@@ -152,27 +137,20 @@ public class CuadDescMod{
 					adyForG.get(vFor).add(wFor);
 			}
 		}//DESCOMENTAR
-		if(impresionTodo)
 		System.out.println(nivel+"Forcing: "+adyForG);
 		/*Se encuentra el grafo componente G''*/
 		Vector<HashMap<Integer,HashSet<Integer>>> SCC = Tarjan();//grafo componente,grafo invertido,componentes
-		if(impresionTodo)
-			System.out.println(nivel+"Component Graph: "+SCC.get(0)+" "+comp+" "+SCC.get(1)+" "+SCC.get(2));
+		System.out.println(nivel+"Component Graph: "+SCC.get(0)+" "+comp+" "+SCC.get(1)+" "+SCC.get(2));
 		HashSet<Integer> vProcesado = new HashSet<Integer>();
 		HashSet<Integer> vPila = new HashSet<Integer>();
-		int miraiz = hashAct++;
-		ptf.put(miraiz,new nodo(2,dominio));//cambiar esto no a dominio sino a MVG
-		int actual = miraiz;//u
-		int nextAct=0;//w
+		nodo u = res.raiz;
 		Stack<Integer> hojas = new Stack<Integer>();
 		for(int n:SCC.get(0).keySet())
 			if(SCC.get(0).get(n).isEmpty()){
-				if(n==pivot)continue;//PUT THE PIVOR OR NOT TO PUT IT
 				hojas.push(n);
 				vPila.add(n);
 			}
-		if(impresionArbol)
-			System.out.println(nivel+"leaf "+hojas);
+		System.out.println(nivel+"leaf "+hojas);
 		/*Mientras G'' no sea vacio*/
 		boolean entra = false;
 		while(!hojas.isEmpty()){
@@ -180,21 +158,18 @@ public class CuadDescMod{
 			vProcesado.add(repreLeaf);
 			vPila.remove(repreLeaf);
 			HashSet<Integer> grafoComp = SCC.get(2).get(repreLeaf);
-			if(grafoComp==null){
-				grafoComp = new HashSet<Integer>();
-				grafoComp.add(repreLeaf);
-			}
 			//2 lines bullshit
 			//nodo w = new nodo(-1,grafoComp);
 			//u.hijos.add(w);
 			//getLeaf(GG)..estructura de padres
 			/*En el algoritmo aca es donde quitamos un nodo sumidero del DAG G''*/
-			if(entra){
-				actual = nextAct;//u = u.hijos.get(u.hijos.size()-1);
-				ptf.get(actual).et= grafoComp;
+			if(!entra)entra = true;
+			else{
+				u = u.hijos.get(u.hijos.size()-1);
+				u.et = grafoComp;
 			}
-			if(impresionArbol)
-				System.out.println(nivel+"DentroWhile "+repreLeaf+" "+grafoComp);
+			
+			System.out.println(nivel+"DentroWhile "+repreLeaf+" "+grafoComp);
 			for(int pad: SCC.get(1).get(repreLeaf)){
 				if(vProcesado.contains(pad) || vPila.contains(pad))continue;
 				SCC.get(0).get(pad).remove(repreLeaf);
@@ -208,60 +183,31 @@ public class CuadDescMod{
 			//necesitaria el grafo con las flechas pal otro lado
 			//F=//quien es Leaf en Componente de Mgv
 			/*se le asocia el tipo de nodo 1 primitivo,2 completo*/
-			ptf.get(actual).clase = grafoComp.size()>1?1:2;
+			u.clase = grafoComp.size()>1?1:2;
 			/*G'' quedo vacio*/
-			HashSet<Integer> todosNodos = new HashSet<Integer>();
 			for(int n:grafoComp){
-				HashSet<Integer> toditos = new HashSet<Integer>();
 				Vector<Integer> F = new Vector<Integer>();
-				for(int m:Mgv.L.get(Mgv.repreBlo.get(n)).elementos){
+				for(int m:Mgv.L.get(Mgv.repreBlo.get(n)).elementos)
 					F.add(m);
-					toditos.add(m);
-					todosNodos.add(m);
-				}
 				if(F.size()>0){
-					if(impresionArbol)
 					System.out.println(nivel+"Manda recursivamente "+F);
 					/*recursion*/
-					if(impresionArbol)
-						System.out.println(nivel+"antes->"+actual+"-->"+ptf.get(actual));
-					int abajo = DescMod(F,nivel+"\t");//arbol gx = DescMod(F,nivel+"\t");
-					ptf.get(abajo).et = toditos;
-					if(impresionArbol)
-						System.out.println(nivel+"Devuelve "+ptf.get(abajo));	
-					if(ptf.get(actual).clase==2 && ptf.get(abajo).clase==2){
+					System.out.println(nivel+"antes->"+res);
+					arbol gx = DescMod(F,nivel+"\t");
+					
+					System.out.println(nivel+"Devuelve "+gx+"---"+u);	
+					if(u.clase==2 && gx.raiz.clase==2){
 						/*si la raiz del recursivo y u son completos se pegan los hijos, asi que se recorren*/
-						for(int m:ptf.get(abajo).hijos)
-							ptf.get(actual).hijos.add(m);
-						//System.out.println(actual+" PIERDE "+abajo);
-						ptf.get(actual).hijos.remove(abajo);
-					}else{ // solo se pega la raiz a u.
-						//System.out.println("Le acabo de agregar a "+ptf.get(actual)+" "+ptf.get(abajo));
-						ptf.get(actual).hijos.add(abajo);
-					}
-					if(impresionArbol)
-					System.out.println(nivel+"despues->"+actual+"-->"+ptf.get(actual));
+						for(int m= 0;m<gx.raiz.hijos.size();m++)
+							u.hijos.add(gx.raiz.hijos.get(m));
+					}else // solo se pega la raiz a u.
+						u.hijos.add(gx.raiz);
+					System.out.println(nivel+"despues->"+gx+" "+res);
 				}
 			}
-			if(impresionArbol)
-			System.out.println(nivel+actual+" TODOS "+todosNodos);
-		if(!hojas.isEmpty()){
-			ptf.put(hashAct,new nodo(-1,null));
-			ptf.get(actual).hijos.add(hashAct);
-			if(entra)
-				ptf.get(actual).et = todosNodos;
-			nextAct = hashAct;//hashAct++;//u.hijos.add(new nodo(-1,null));
-			hashAct++;
-			entra = true;
+			u.hijos.add(new nodo(-1,null));
 		}
-			
-		}
-		HashSet<Integer> soloPivot = new HashSet<Integer>();
-		soloPivot.add(pivot);
-		ptf.put(hashAct,new nodo(3,soloPivot));
-		ptf.get(actual).hijos.add(hashAct++);
-		System.out.println(nivel+"APUNTADOR "+miraiz);
-		return miraiz;
+		return res;
 	}
 	public static int desc;
 	public static HashMap<Integer,Integer> lowlink;
@@ -312,7 +258,6 @@ public class CuadDescMod{
 				resRev.get(comp.get(rm)).add(comp.get(rn));
 			}
 		}
-		if(impresionTodo)
 		System.out.println("TARJAN "+compp);
 		//System.out.println(lowlink+" "+index+" "+vis);
 		Vector<HashMap<Integer,HashSet<Integer>>> ress =new Vector<HashMap<Integer,HashSet<Integer>>>() ;
@@ -431,7 +376,6 @@ class part{//a partition of a set
 		HashSet<Integer> der = new HashSet<Integer>();
 		int repreIzq = -1;
 		int repreDer = -1;
-		//System.out.println("Antes Refi "+S);
 		for(int e: S.elementos){
 			if(CuadDescMod.ady.get(w).contains(e)){
 				der.add(e);repreDer=e;
@@ -492,10 +436,7 @@ class part{//a partition of a set
 		//System.out.println("Refi(w="+w+" "+hS+"): L="+L+" outsiders="+out+" outS="+outStack);
 		}
 		/*se crea el bloque que falta, el que solo contiene el pivot*/
-		//singleV.add(pivot);
-		HashSet<Integer> singleVV = new HashSet<Integer>();
-		singleVV.add(pivot);
-		L.put(ha,new bloque(ha,pivot,singleVV,null));
+		L.put(ha,new bloque(ha,pivot,singleV,null));
 		repreBlo.put(pivot,ha);
 		L.get(ha).pivot=true;//se da un flag para saber que bloque es el del pivot
 	}
@@ -527,25 +468,21 @@ class bloque{
 /*
 clase nodo, compone a arbol.
 contiene el tipo de nodo(primo degenerado)
-0 vacio
-1 primitivo
-2 completo
-3 hoja
 */
 class nodo{
-	public HashSet<Integer> hijos;
+	public Vector<nodo> hijos;
 	public HashSet<Integer> et;
 	public int clase;
 	public nodo(int clase,HashSet<Integer> et){
 		this.clase = clase;
-		hijos = new HashSet<Integer>();
+		hijos = new Vector<nodo>();
 		this.et = et;
 	}
 	public String toString(){
-		String ja = "";//+hijos;
-		for(int n:hijos)
-			ja+= n+"->"+CuadDescMod.ptf.get(n)+" ";
-		return (clase==1?"Primitivo":clase==0?"Vacio":(clase==3?"Hoja":"Completo"))+" "+et+" ("+ja+")";
+		String ja = "";
+		for(int n =0;n<hijos.size();n++)
+			ja+= hijos.get(n)+" ";
+		return (clase==1?"Primitivo":clase==0?"Vacio":"Completo")+" "+et+" ("+ja+")";
 	}
 }
 /*
