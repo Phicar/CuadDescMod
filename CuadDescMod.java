@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.concurrent.*;
 public class CuadDescMod{
 	//Tabs de la impresion
-	public static boolean impresionTodo = false;
+	public static boolean impresionTodo = true;
 	public static boolean impresionArbol = true;
 	public static int V;//numero de nodos
 	public static int E;//numero de aristas
@@ -80,9 +80,27 @@ public class CuadDescMod{
 		}
 		/*Ajustar colores*/
 		colorear(0);
+		//recortar(0,-1);
 		/*Se imprime el arbol*/
 		if(impresionArbol)
 		System.out.println("Arbol final:"+ptf.get(0));
+	}
+	public static void recortar(int a,int b){
+		HashSet<Integer> h = (HashSet<Integer>)ptf.get(a).hijos.clone();
+		int ac = ptf.get(a).clase;
+		if(h.isEmpty())return;
+		if(b==-1)
+			for(int n:h)recortar(n,a);
+		else{
+			int bc = ptf.get(b).clase;
+			if(ac==bc && ac%2==0){
+				ptf.get(b).hijos.remove(a);
+				for(int n:h)ptf.get(b).hijos.add(n);
+				recortar(b,-1);
+			}else{
+				for(int n:h)recortar(n,a);
+			}
+		}
 	}
 	public static void colorear(int a){
 		HashSet<Integer> h = ptf.get(a).hijos;
@@ -270,6 +288,7 @@ public class CuadDescMod{
 			if(impresionArbol)
 			System.out.println(nivel+actual+" TODOS "+todosNodos);
 		if(!hojas.isEmpty()){
+			
 			ptf.put(hashAct,new nodo(-1,null));
 			ptf.get(actual).hijos.add(hashAct);
 			if(entra)
@@ -455,6 +474,7 @@ class part{//a partition of a set
 		HashSet<Integer> der = new HashSet<Integer>();
 		int repreIzq = -1;
 		int repreDer = -1;
+		//System.out.println(CuadDescMod.ady);
 		//System.out.println("Antes Refi "+S);
 		for(int e: S.elementos){
 			if(CuadDescMod.ady.get(w).contains(e)){
