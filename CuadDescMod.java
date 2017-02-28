@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.concurrent.*;
 public class CuadDescMod{
 	//Tabs de la impresion
-	public static boolean impresionTodo = false;
+	public static boolean impresionTodo = true;
 	public static boolean impresionArbol = true;
 	public static int V;//numero de nodos
 	public static int E;//numero de aristas
@@ -16,7 +16,7 @@ public class CuadDescMod{
 	public static int compPert[];//compPert[n]=i significa n esta en la componente de i
 	public static HashMap<Integer,Vector<Integer>> componentes;//mapea componente i a {n\in V: compPert[n]=i}
 	public static Vector<Integer> indComp;//determina el representante(padre en el arbol) de la componente
-	public static HashMap<Integer,HashSet<Integer>> adyForG;//forcing graph
+	public static HashMap<Integer,HashSet<Integer>> adyForG;//forcing graph 
 	public static HashMap<Integer,nodo> ptf = new HashMap<Integer,nodo>();//arbol final
 	public static int hashAct = 0;
 	public static void main(String args[]) throws Exception{
@@ -80,7 +80,7 @@ public class CuadDescMod{
 		}
 		/*Ajustar colores*/
 		colorear(0);
-		recortar(0,-1);
+		//recortar(0,-1);
 		/*Se imprime el arbol*/
 		if(impresionArbol)
 		System.out.println("Arbol final:"+ptf.get(0));
@@ -111,7 +111,7 @@ public class CuadDescMod{
 			HashSet<Integer> repres = ptf.get(n).et;
 			if(r==-1)r = (int)repres.iterator().next();
 			else{
-			if(ady.get(r)==null || !ady.get(r).contains((int)repres.iterator().next()))completo = false;
+			if(!ady.get(r).contains((int)repres.iterator().next()))completo = false;
 			}
 			colorear(n);
 			
@@ -328,7 +328,6 @@ public class CuadDescMod{
 		HashMap<Integer,HashSet<Integer>> res = new HashMap<Integer,HashSet<Integer>>();
 		HashMap<Integer,HashSet<Integer>> resRev = new HashMap<Integer,HashSet<Integer>>();
 		desc=0;
-		System.out.println("Antecitos de Tarjan "+adyForG);
 		/*recorre los vertices de G y manda tarjan*/
 		for(int a:adyForG.keySet())
 			if(!vis.contains(a))
@@ -377,10 +376,8 @@ public class CuadDescMod{
 		vis.add(a);
 		if(adyForG.keySet().contains(a)){
 		for(int h:adyForG.get(a)){
-			if(!lowlink.keySet().contains(h)){
+			if(!lowlink.keySet().contains(h))
 				scc(h);
-				lowlink.put(a,Math.min(lowlink.get(a),lowlink.get(h)));
-			}
 			if(vis.contains(h))
 				lowlink.put(a,Math.min(lowlink.get(a),index.get(h)));
 		}
@@ -590,9 +587,11 @@ class nodo{
 	}
 	public String toString(){
 		String ja = "";//+hijos;
+		int cantHijos = hijos.size();
 		for(int n:hijos)
 			ja+= n+"->"+CuadDescMod.ptf.get(n)+" ";
-		return (clase==1?"Primitivo":clase==0?"Vacio":(clase==3?"Hoja":"Completo"))+" "+et+" ("+ja+")";
+		String tipoImpresion = clase==1?"Primitivo":clase==0?"Vacio":(clase==3?"Hoja":"Completo");
+		return tipoImpresion+" "+(clase==3?et:cantHijos+" ("+ja+")");
 	}
 }
 /*
