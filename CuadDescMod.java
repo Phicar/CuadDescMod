@@ -330,7 +330,7 @@ public class CuadDescMod{
 		desc=0;
 		/*recorre los vertices de G y manda tarjan*/
 		for(int a:adyForG.keySet())
-			if(!vis.contains(a))
+			if(!index.keySet().contains(a))//aeropuerto
 				scc(a);
 		/*Recorre las componentes del Tarjan y crea el digrafo que definen sus componentes*/
 		
@@ -369,15 +369,17 @@ public class CuadDescMod{
 	O(V+E)
 	*/
 	public static void scc(int a){
-		if(!lowlink.keySet().contains(a))
+		//aeropuerto if(!lowlink.keySet().contains(a))
 			lowlink.put(a,desc);
 		index.put(a,desc++);
 		sccS.push(a);
 		vis.add(a);
 		if(adyForG.keySet().contains(a)){
 		for(int h:adyForG.get(a)){
-			if(!lowlink.keySet().contains(h))
+			if(!lowlink.keySet().contains(h)){//aeropuerto
 				scc(h);
+				lowlink.put(a,Math.min(lowlink.get(a),lowlink.get(h)));
+			}
 			if(vis.contains(h))
 				lowlink.put(a,Math.min(lowlink.get(a),index.get(h)));
 		}
@@ -397,6 +399,7 @@ public class CuadDescMod{
 			}
 			comp.add(a);
 			compp.put(a,compa);
+//			System.out.println("Dentro Tarjan creo "+compa);
 			
 		}
 
@@ -464,6 +467,7 @@ class part{//a partition of a set
 			outStack.remove(w);
 			continue;
 		}
+		//System.out.println("Uso Outsider: "+w+" ("+CuadDescMod.ady.get(w)+") a clase "+claseApuntada);
 		bloque S = L.get(claseApuntada);
 		int hS = S.hash;
 		/*izq\cup der = S, los dos bloques que refinan la particion pasada
@@ -481,6 +485,7 @@ class part{//a partition of a set
 				der.add(e);repreDer=e;
 			}else{ izq.add(e);repreIzq = e;}
 		}
+		//System.out.println("Refini a "+izq+" "+der);
 		/*refinamiento de S en iz,der*/
 		if(izq.size()>0 && der.size()>0){
 			L.remove(hS);
